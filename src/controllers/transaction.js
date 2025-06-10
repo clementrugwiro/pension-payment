@@ -3,22 +3,26 @@ const User = require("../models/user");
 const mongoose = require("mongoose");
 
 exports.createTransaction = async (req, res) => {
-    try {
-      const existingFirst = await Transaction.findOne({ user: req.user.userId, isFirst: true });
-  
-      const newTransaction = new Transaction({
-        user: req.user.userId,
-        amount: req.body.amount,
-        isFirst: !existingFirst, // true if it's the first
-      });
-  
-      await newTransaction.save();
-      res.status(201).json({ message: "Transaction created", transaction: newTransaction });
-    } catch (err) {
-      res.status(500).json({ message: "Error creating transaction", error: err.message });
-    }
-  };
+  try {
+    const existingFirst = await Transaction.findOne({
+      user: req.user.userId,
+      isFirst: true,
+    });
 
+    const newTransaction = new Transaction({
+      user: req.user.userId,
+      amount: 0, // User cannot set amount
+      status: "pending",
+      isFirst: !existingFirst,
+    });
+
+    await newTransaction.save();
+
+    res.status(201).json({ message: "Transaction request submitted", transaction: newTransaction });
+  } catch (err) {
+    res.status(500).json({ message: "Error creating transaction", error: err.message });
+  }
+};
 // 👤 User gets all their transactions
 exports.getUserTransactions = async (req, res) => {
   try {
@@ -68,21 +72,30 @@ exports.getTransactionById = async (req, res) => {
 exports.approveTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id))
+    const { amount } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid transaction ID" });
+    }
 
     const transaction = await Transaction.findById(id);
-    if (!transaction)
+    if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });
+    }
 
     if (transaction.status === "success") {
       return res.status(400).json({ message: "Transaction already approved" });
     }
 
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      return res.status(400).json({ message: "A valid amount must be provided by admin" });
+    }
+
+    transaction.amount = amount;
     transaction.status = "success";
     await transaction.save();
 
-    res.status(200).json({ message: "Transaction approved", transaction });
+    res.status(200).json({ message: "Transaction approved and funded", transaction });
   } catch (err) {
     res.status(500).json({ message: "Error approving transaction", error: err.message });
   }
