@@ -7,6 +7,7 @@ const authenticateUser = (req, res, next) => {
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized: No token provided" });
+    console.log("Unauthorized: No token provided");
   }
 
   const token = authHeader.split(" ")[1];

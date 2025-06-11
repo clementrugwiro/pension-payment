@@ -2,27 +2,34 @@ const Transaction = require("../models/transaction");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 
+// User initiates a transaction if none are pending or auto-paying
 exports.createTransaction = async (req, res) => {
   try {
-    const existingFirst = await Transaction.findOne({
+    const hasOngoing = await Transaction.exists({
       user: req.user.userId,
       isFirst: true,
+      status: { $in: ["pending", "success"] },
     });
+    console.log("Checking for ongoing transactions:", hasOngoing);
+    if (hasOngoing) {
+      return res.status(400).json({ message: "You already have a pending or active transaction." });
+    }
 
     const newTransaction = new Transaction({
       user: req.user.userId,
-      amount: 0, // User cannot set amount
+      amount: 0,
       status: "pending",
-      isFirst: !existingFirst,
+      isFirst: true,
     });
 
     await newTransaction.save();
-
+    
     res.status(201).json({ message: "Transaction request submitted", transaction: newTransaction });
   } catch (err) {
     res.status(500).json({ message: "Error creating transaction", error: err.message });
   }
 };
+
 // 👤 User gets all their transactions
 exports.getUserTransactions = async (req, res) => {
   try {
@@ -74,32 +81,31 @@ exports.approveTransaction = async (req, res) => {
     const { id } = req.params;
     const { amount } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ message: "Invalid transaction ID" });
-    }
 
     const transaction = await Transaction.findById(id);
-    if (!transaction) {
+    if (!transaction)
       return res.status(404).json({ message: "Transaction not found" });
-    }
 
-    if (transaction.status === "success") {
+    if (transaction.status === "success")
       return res.status(400).json({ message: "Transaction already approved" });
-    }
 
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      return res.status(400).json({ message: "A valid amount must be provided by admin" });
-    }
+    if (!amount || isNaN(amount) || Number(amount) <= 0)
+      return res.status(400).json({ message: "Valid amount is required" });
 
+    // Approve original request
     transaction.amount = amount;
     transaction.status = "success";
     await transaction.save();
 
-    res.status(200).json({ message: "Transaction approved and funded", transaction });
+
+    res.status(200).json({ message: "Transaction approved and auto-payments created", transaction });
   } catch (err) {
     res.status(500).json({ message: "Error approving transaction", error: err.message });
   }
 };
+
 
 // ❌ Admin rejects a transaction
 exports.rejectTransaction = async (req, res) => {
@@ -124,5 +130,8 @@ exports.rejectTransaction = async (req, res) => {
     res.status(500).json({ message: "Error rejecting transaction", error: err.message });
   }
 };
+
+
+
 
   

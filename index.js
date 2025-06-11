@@ -23,48 +23,84 @@ app.get('/', (req, res) => {
   });
   
 
-const uri = 'mongodb+srv://kendymve:sNOdgCndqdDZYaYk@cluster0.mgvjffm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// const uri = 'mongodb+srv://kendymve:sNOdgCndqdDZYaYk@cluster0.mgvjffm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const uri = 'mongodb+srv://Clement:R4IwpReiIfllM8DT@cluster0.ahh6jmn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 mongoose.connect(uri)
     .then(()=>{
        console.log("connected to database")
     })
 
-// Every 5 minutes
+// Every 3 minutes
+// cron/autoPaymentJob.js
 
+cron.schedule("*/1 * * * *", async () => {
+  console.log("🔄 Checking for next auto-payment...");
 
-cron.schedule("*/5 * * * *", async () => {
-  console.log("🔄 Auto-payment job running...");
-
-  // Get users who had a successful first payment
-  const firstPaidUsers = await Transaction.distinct("user", {
+  const firstTransactions = await Transaction.find({
     isFirst: true,
     status: "success",
   });
 
-  for (const userId of firstPaidUsers) {
-    // Count the number of successful auto-payments (not first)
-    const autoPaymentCount = await Transaction.countDocuments({
+  for (const firstTx of firstTransactions) {
+    const userId = firstTx.user;
+
+    const autoTransactions = await Transaction.find({
       user: userId,
       isFirst: false,
-      status: "success",
-    });
+    }).sort({ date: 1 });
 
-    if (autoPaymentCount < 5) {
-      const autoTx = new Transaction({
+    // If user has completed 5 auto-transactions, mark first as completed
+    if (autoTransactions.length >= 5) {
+      await Transaction.updateOne(
+        { _id: firstTx._id },
+        { $set: { status: "completed" } }
+      );
+      continue;
+    }
+
+    const now = Date.now();
+
+    // If no auto-payments yet, check if 3 minutes have passed since firstTx.date
+    if (
+      autoTransactions.length === 0 &&
+      now - new Date(firstTx.date).getTime() >= 3 * 60 * 1000
+    ) {
+      const newTx = new Transaction({
         user: userId,
-        amount: 1000, // fixed or based on a user's plan
+        amount: firstTx.amount,
         status: "success",
         isFirst: false,
+        date: new Date(),
       });
+      await newTx.save();
+      console.log(`✅ First auto-payment created for user ${userId}`);
+    }
 
-      await autoTx.save();
-      console.log(`✅ Auto-payment #${autoPaymentCount + 1} created for user ${userId}`);
-    } else {
-      console.log(`⛔ User ${userId} reached auto-payment limit. They must request again.`);
-      // Optional: you could notify the user or update a flag in DB here
+    // If already has some auto-payments, check 3 min since the latest
+    if (
+      autoTransactions.length > 0 &&
+      now -
+        new Date(
+          autoTransactions[autoTransactions.length - 1].date
+        ).getTime() >=
+        3 * 60 * 1000
+    ) {
+      const newTx = new Transaction({
+        user: userId,
+        amount: firstTx.amount,
+        status: "success",
+        isFirst: false,
+        date: new Date(),
+      });
+      await newTx.save();
+      console.log(`✅ Auto-payment #${autoTransactions.length + 1} created for user ${userId}`);
     }
   }
 });
+
+
+
+
 
 
 app.use(bodyParser.json())

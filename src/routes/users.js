@@ -19,7 +19,7 @@ router.post("/login", userController.loginUser);
 
 
 // Get user profile by ID
-router.get("/:id",authenticate, authorizeNotUser, userController.getUserById);
+router.get("/:id",authenticate, userController.getUserById);
 
 
 
