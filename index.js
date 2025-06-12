@@ -23,8 +23,8 @@ app.get('/', (req, res) => {
   });
   
 
-// const uri = 'mongodb+srv://kendymve:sNOdgCndqdDZYaYk@cluster0.mgvjffm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-const uri = 'mongodb+srv://Clement:R4IwpReiIfllM8DT@cluster0.ahh6jmn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+ const uri = 'mongodb+srv://kendymve:sNOdgCndqdDZYaYk@cluster0.mgvjffm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// const uri = 'mongodb+srv://Clement:R4IwpReiIfllM8DT@cluster0.ahh6jmn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 mongoose.connect(uri)
     .then(()=>{
        console.log("connected to database")

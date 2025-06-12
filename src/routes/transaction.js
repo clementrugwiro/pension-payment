@@ -22,4 +22,7 @@ router.put("/:id/approve", authenticate, authorizeNotUser, transactionController
 // ❌ Admin rejects a transaction
 router.put("/:id/reject", authenticate, authorizeNotUser, transactionController.rejectTransaction);
 
+// delete all transactions of a user 
+router.delete("/user/:userId",authenticate,authorizeNotUser,transactionController.deleteTransactionsByUser);
+
 module.exports = router;

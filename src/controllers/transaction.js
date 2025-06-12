@@ -106,7 +106,6 @@ exports.approveTransaction = async (req, res) => {
   }
 };
 
-
 // ❌ Admin rejects a transaction
 exports.rejectTransaction = async (req, res) => {
   try {
@@ -131,7 +130,29 @@ exports.rejectTransaction = async (req, res) => {
   }
 };
 
+// delete a user's history of transactions 
+exports.deleteTransactionsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+     console.log("DELETE request received for userId:", userId);
+    console.log("Valid ObjectId:", mongoose.Types.ObjectId.isValid(userId));
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
+    // Optional: check user exists; if you have User model:
+    // const user = await User.findById(userId);
+    // if (!user) return res.status(404).json({ message: "User not found" });
+
+    const result = await Transaction.deleteMany({ user: userId });
+    return res.status(200).json({
+      message: `Deleted ${result.deletedCount} transaction(s) for user ${userId}`,
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Error deleting transactions", error: err.message });
+  }
+};
 
 
   
