@@ -68,13 +68,30 @@ exports.loginUser = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: "Incorrect password" });
 
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+    // ✅ Update last login time
+    user.lastLogin = new Date();
+    await user.save();
 
-    res.status(200).json({ token, user: { id: user._id, name: user.name, role: user.role } });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role,
+        lastLogin: user.lastLogin, // Optional: include in response
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: "Login failed", error: err.message });
   }
 };
+
 
 // Get user by ID
 exports.getUserById = async (req, res) => {

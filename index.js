@@ -6,7 +6,8 @@ const cron = require("node-cron");
 const Transaction = require("./src/models/transaction");
 const User = require("./src/models/user");
 const transactionRoutes = require("./src/routes/transaction");
-const cors = require("cors")
+const cors = require("cors");
+const contactUs = require("./src/routes/contact.js");
 require('dotenv').config()
 
 const port = 3001
@@ -106,3 +107,4 @@ cron.schedule("*/1 * * * *", async () => {
 app.use(bodyParser.json())
 app.use("/api/user",users)
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/contactus",contactUs)

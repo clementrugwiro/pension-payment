@@ -7,8 +7,9 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'manager', 'admin'], default: 'user' },
   dob: Date,
   nationalID: String,
-  profilePictureUrl: String, // <-- Added field
-  paymentHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment' }]
+  profilePictureUrl: String,
+  paymentHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment' }],
+  lastLogin: Date // ✅ Track last login
 });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
